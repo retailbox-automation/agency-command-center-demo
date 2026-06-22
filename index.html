@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Medicare Mary — Command Center</title>
+<style>
+  :root{
+    --navy:#14323b; --navy-2:#1c4452; --teal:#2a9d8f; --teal-ink:#1c7268;
+    --bg:#eef2f3; --surface:#ffffff; --line:#dde5e7;
+    --ink:#1b2429; --ink-2:#3f5057; --muted:#6d7f86;
+    --good:#2a9d8f; --warn:#d98324; --shadow:0 1px 2px rgba(20,50,59,.05),0 4px 14px rgba(20,50,59,.05);
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5;
+    -webkit-font-smoothing:antialiased; padding:22px 18px 40px;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+
+  /* Header band */
+  .topbar{
+    background:linear-gradient(120deg,var(--navy),var(--navy-2));
+    border-radius:var(--r); padding:22px 26px; color:#fff;
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    box-shadow:var(--shadow);
+  }
+  .greet{font-size:.82rem; letter-spacing:.14em; text-transform:uppercase; color:#9fc6c0; font-weight:600}
+  .topbar h1{font-size:1.6rem; font-weight:700; margin:3px 0 2px; letter-spacing:-.01em}
+  .topbar .date{font-size:.92rem; color:#bcd2d4}
+  .aep{
+    text-align:right; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16);
+    border-radius:12px; padding:11px 16px; min-width:128px;
+  }
+  .aep .lbl{font-size:.66rem; letter-spacing:.13em; text-transform:uppercase; color:#9fc6c0; font-weight:600}
+  .aep .num{font-size:1.7rem; font-weight:800; line-height:1.1; color:#fff}
+  .aep .sub{font-size:.7rem; color:#bcd2d4}
+
+  /* Person switcher */
+  .switch{display:flex; gap:6px; margin:16px 0 18px; background:var(--surface);
+    border:1px solid var(--line); border-radius:12px; padding:5px; width:fit-content; box-shadow:var(--shadow)}
+  .switch button{
+    font:inherit; font-size:.9rem; font-weight:600; color:var(--ink-2); cursor:pointer;
+    border:0; background:transparent; padding:8px 18px; border-radius:8px; transition:background .18s,color .18s;
+  }
+  .switch button[aria-selected="true"]{background:var(--navy); color:#fff}
+  .switch button:focus-visible{outline:2px solid var(--teal); outline-offset:2px}
+
+  /* Grid of panels */
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:16px; align-items:start}
+  .grid.fade{opacity:0; transform:translateY(6px)}
+  .grid{opacity:1; transform:none; transition:opacity .26s cubic-bezier(.2,.8,.2,1),transform .26s cubic-bezier(.2,.8,.2,1)}
+  .span2{grid-column:1 / -1}
+
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    box-shadow:var(--shadow); overflow:hidden}
+  .panel > header{display:flex; align-items:center; justify-content:space-between;
+    padding:13px 16px 11px; border-bottom:1px solid var(--line)}
+  .panel h2{font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-2); font-weight:700}
+  .count{font-size:.72rem; font-weight:700; color:var(--teal-ink); background:#e3f3f0;
+    border-radius:999px; padding:2px 9px; min-width:24px; text-align:center}
+  .body{padding:6px 16px 14px}
+  .body.scroll{max-height:268px; overflow:auto}
+
+  /* Schedule */
+  .ev{display:flex; gap:14px; padding:9px 0; border-bottom:1px solid #eef2f3}
+  .ev:last-child{border-bottom:0}
+  .ev .t{font-size:.8rem; font-weight:700; color:var(--teal-ink); white-space:nowrap; width:62px; flex:none}
+  .ev .d{font-size:.9rem}
+  .ev .d small{display:block; color:var(--muted); font-size:.78rem; font-weight:500}
+
+  /* Inbox */
+  .mail{padding:10px 0; border-bottom:1px solid #eef2f3}
+  .mail:last-child{border-bottom:0}
+  .mail .s{font-size:.88rem; font-weight:600; color:var(--navy)}
+  .mail .p{font-size:.8rem; color:var(--muted); margin-top:1px; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden}
+
+  /* List / projects */
+  .row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eef2f3; font-size:.9rem}
+  .row:last-child{border-bottom:0}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex:none}
+  .row .meta{margin-left:auto; font-size:.78rem; color:var(--muted); font-weight:500}
+
+  /* To-do */
+  .todo{display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #eef2f3; font-size:.9rem}
+  .todo:last-child{border-bottom:0}
+  .box{width:15px;height:15px;border:1.6px solid #c2cfd2;border-radius:5px;flex:none;margin-top:2px;position:relative}
+  .todo.done .box{background:var(--teal);border-color:var(--teal)}
+  .todo.done .box::after{content:"";position:absolute;left:4.5px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .todo.done span{color:var(--muted);text-decoration:line-through}
+
+  /* Start dates */
+  .sd{display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid #eef2f3}
+  .sd:last-child{border-bottom:0}
+  .sd .m{font-size:.82rem; font-weight:700; color:#fff; background:var(--navy); border-radius:8px; padding:5px 9px; text-align:center; min-width:54px}
+  .sd .x{font-size:.9rem}
+  .sd .x small{display:block;color:var(--muted);font-size:.78rem}
+
+  /* Link tiles (FB / RingCentral) */
+  .tile{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
+    border-radius:11px;font-size:.9rem;font-weight:600;color:var(--navy);text-decoration:none;background:#fbfdfd}
+  .tile .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-size:.95rem;font-weight:800;flex:none}
+  .tile small{display:block;font-weight:500;color:var(--muted);font-size:.76rem}
+
+  /* Notes */
+  .note{font-size:.88rem;color:var(--ink-2);padding:4px 0}
+  .note + .note{border-top:1px dashed #e2e9ea;padding-top:9px;margin-top:5px}
+
+  .foot{margin-top:22px;text-align:center;font-size:.76rem;color:var(--muted)}
+  .foot b{color:var(--ink-2)}
+
+  @media (max-width:680px){
+    .grid{grid-template-columns:1fr}
+    .topbar{flex-direction:column;align-items:flex-start}
+    .aep{align-self:stretch;text-align:left}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .grid,.switch button{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="greet">Good morning, <span id="who">Mary</span></div>
+      <h1>Medicare Mary — Command Center</h1>
+      <div class="date" id="today">—</div>
+    </div>
+    <div class="aep">
+      <div class="lbl">Days until AEP</div>
+      <div class="num" id="aepNum">—</div>
+      <div class="sub">Starts Oct 15, 2026</div>
+    </div>
+  </div>
+
+  <div class="switch" role="tablist" aria-label="View by person">
+    <button role="tab" aria-selected="true" data-p="mary">Mary</button>
+    <button role="tab" aria-selected="false" data-p="alex">Alex</button>
+    <button role="tab" aria-selected="false" data-p="lisa">Lisa</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="foot">Sample view prepared by <b>Retailbox</b> for Medicare Mary LLC · illustrative data, read-only mock-up</p>
+</div>
+
+<script>
+const fmtDate = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+document.getElementById('today').textContent = fmtDate;
+(function(){
+  const aep = new Date(2026,9,15); // Oct 15 2026
+  const days = Math.round((aep - new Date())/86400000);
+  const el = document.getElementById('aepNum');
+  const target = days > 0 ? days : 0;
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(days<=0){ el.textContent = 'Live'; return; }
+  if(reduce){ el.textContent = target; return; }
+  let n=Math.max(0,target-22), step=()=>{ n+=Math.ceil((target-n)/6); if(n>=target){el.textContent=target;return;} el.textContent=n; requestAnimationFrame(step); };
+  step();
+})();
+
+// ---- Synthetic data (illustrative only, no real clients) ----
+const schedule = {type:'sched',title:"Today's Schedule",count:4,span:false,items:[
+  {t:'7:00a',d:'Alex out of office',s:'Returns 11:00a'},
+  {t:'8:00a',d:'Block: AEP prep',s:'Carrier rate review'},
+  {t:'1:00p',d:'Zoom Results Meeting — R. Hayes',s:'T65 Aug · Supp + Rx'},
+  {t:'3:00p',d:'55+ presentation @ Oakwood',s:'Confirm room + handouts'},
+]};
+const inbox = {type:'mail',title:'Unread Inbox',count:6,span:false,items:[
+  {s:'Re: T65 Sept — application steps',p:'Got it, I registered on SSA.gov last night, what is next on my end?'},
+  {s:'Dental & Vision plan options',p:'Reviewed the overview you sent, the $0 premium plan looks good to me.'},
+  {s:'Fall RV Rally — sponsorship invitation',p:'We can hold the Thursday dinner slot for a 10-minute MASA pitch if you...'},
+  {s:'Re: Hiring — third team member',p:'Thanks for the time, I added a couple of candidates to the shortlist.'},
+  {s:'Employer coverage vs Medicare',p:'My group plan is $340/mo, can you compare that against a Supplement?'},
+  {s:'Physicians Mutual — dental quote',p:'Attaching the rate sheet you asked for ahead of the Zoom meeting.'},
+]};
+const alexProj = {type:'list',title:'Alex — Small Projects',count:8,span:false,items:[
+  {x:'Book fall 55+ communities',m:'3 of 7'},{x:'AEP readiness checklist',m:'in progress'},
+  {x:'Welcome-bag inventory',m:'reorder'},{x:'Update T65 email templates',m:'review'},
+  {x:'Carrier contracting renewals',m:'2 due'},{x:'Client doc clean-up (OneDrive)',m:''},
+]};
+const lisaProj = {type:'list',title:'Lisa — Small Projects',count:3,span:false,items:[
+  {x:'Run PPO/HMO/Supp/Rx analyses',m:'2 due'},{x:'Rally marketing page edits',m:''},{x:'LMS article submission',m:'draft'},
+]};
+const startDates = {type:'sd',title:'Next Month Start Dates',count:null,span:false,items:[
+  {m:'Aug 1',x:'3 clients starting',s:'2 Supplement · 1 Advantage'},
+  {m:'Sep 1',x:'5 clients starting',s:'T65 cohort · all green-lit'},
+  {m:'Oct 1',x:'2 clients starting',s:'Awaiting app items'},
+]};
+const maryMisc = {type:'note',title:'Misc Notes',count:null,span:false,items:[
+  'Confirm Pat the seminar A/V before Oakwood.',
+  'Follow up with carrier rep on the delayed commission statement.',
+  'Decide third-hire start date so onboarding can be scheduled.',
+]};
+const alexTodo = {type:'todo',title:'Alex — Daily To-Do',count:null,span:false,items:[
+  {x:'Pull tomorrow’s activities into Daily board',done:true},
+  {x:'Send 1st-appointment scheduling emails (4)',done:true},
+  {x:'Application status checks (2)',done:false},
+  {x:'Confirm Oct rally sponsorship slot',done:false},
+  {x:'Tidy AgencyBloc activity titles flagged today',done:false},
+]};
+const lisaTodo = {type:'todo',title:'Lisa — Daily To-Do',count:null,span:false,items:[
+  {x:'Run Supp + Rx analysis for the 1:00p Zoom',done:true},
+  {x:'Prep final plan overview docs (2)',done:false},
+  {x:'Update rally outcome / app count',done:false},
+]};
+const facebook = {type:'link',title:'Facebook',count:null,span:false,items:[
+  {ic:'f',color:'#1877f2',x:'Medicare Mary — Business Page',s:'Open inbox + scheduled posts'},
+]};
+const ringcentral = {type:'link',title:'RingCentral',count:null,span:false,items:[
+  {ic:'☎',color:'#0b7d5c',x:'Phone & call recaps',s:'3 new voicemails · 12 calls today'},
+]};
+const lisaMisc = {type:'note',title:'Misc Notes',count:null,span:false,items:[
+  'Two analyses due 2 days before each Zoom — both on track.',
+  'Welcome bags low: flag Alex to reorder.',
+]};
+
+const PEOPLE = {
+  mary:{name:'Mary', panels:[schedule, inbox, alexProj, lisaProj, startDates, maryMisc]},
+  alex:{name:'Alex', panels:[schedule, inbox, alexTodo, alexProj, startDates, {...maryMisc,title:'Misc Notes',items:['Cover the 11:00a inbound calls while solo.','Double-check the Oakwood handout count.']}]},
+  lisa:{name:'Lisa', panels:[schedule, lisaProj, lisaTodo, facebook, ringcentral, lisaMisc]},
+};
+
+function panelHTML(p){
+  const head = `<header><h2>${p.title}</h2>${p.count!=null?`<span class="count">${p.count}</span>`:''}</header>`;
+  let inner='';
+  if(p.type==='sched') inner = p.items.map(i=>`<div class="ev"><div class="t">${i.t}</div><div class="d">${i.d}<small>${i.s}</small></div></div>`).join('');
+  else if(p.type==='mail') inner = p.items.map(i=>`<div class="mail"><div class="s">${i.s}</div><div class="p">${i.p}</div></div>`).join('');
+  else if(p.type==='list') inner = p.items.map(i=>`<div class="row"><span class="dot"></span>${i.x}${i.m?`<span class="meta">${i.m}</span>`:''}</div>`).join('');
+  else if(p.type==='todo') inner = p.items.map(i=>`<div class="todo ${i.done?'done':''}"><span class="box"></span><span>${i.x}</span></div>`).join('');
+  else if(p.type==='sd') inner = p.items.map(i=>`<div class="sd"><div class="m">${i.m}</div><div class="x">${i.x}<small>${i.s}</small></div></div>`).join('');
+  else if(p.type==='link') inner = p.items.map(i=>`<a class="tile" href="#" onclick="return false"><span class="ic" style="background:${i.color}">${i.ic}</span><span>${i.x}<small>${i.s}</small></span></a>`).join('');
+  else if(p.type==='note') inner = p.items.map(i=>`<div class="note">${i}</div>`).join('');
+  const scroll = (p.type==='mail'||(p.type==='list'&&p.items.length>5)) ? ' scroll':'';
+  return `<section class="panel${p.span?' span2':''}"><div>${head}</div><div class="body${scroll}">${inner}</div></section>`;
+}
+
+function render(key){
+  const p = PEOPLE[key];
+  document.getElementById('who').textContent = p.name;
+  const grid = document.getElementById('grid');
+  grid.classList.add('fade');
+  setTimeout(()=>{
+    grid.innerHTML = p.panels.map(panelHTML).join('');
+    grid.classList.remove('fade');
+  }, matchMedia('(prefers-reduced-motion:reduce)').matches?0:160);
+}
+
+document.querySelectorAll('.switch button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.switch button').forEach(x=>x.setAttribute('aria-selected', x===b));
+    render(b.dataset.p);
+  });
+});
+render('mary');
+</script>
+</body>
+</html>
